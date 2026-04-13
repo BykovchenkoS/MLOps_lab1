@@ -1,0 +1,24 @@
+services:
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  spark-job:
+    build: .
+    depends_on:
+      - minio
+    volumes:
+      - ./spark_preprocess.py:/opt/spark/work-dir/spark_preprocess.py
+    working_dir: /opt/spark/work-dir
+    command: ["/opt/spark/bin/spark-submit", "--master", "local[*]", "--driver-memory", "2G", "--packages", "org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262", "spark_preprocess.py"]
+
+volumes:
+  minio_data:
